@@ -1,2 +1,10 @@
+node_modules/
+dist/
 .DS_Store
-.trae-html-share-packages/
+*.log
+*.zip
+
+# 本地素材库（体积较大，不进入仓库）
+/assets/
+/r6-assets/
+/视觉风格参考/

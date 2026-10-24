@@ -1,0 +1,47 @@
+:root {
+  color-scheme: dark;
+
+  /* 基础色板（规格第 8 页） */
+  --bg: #070e16;
+  --bg-deep: #050a11;
+  --panel: rgba(16, 29, 42, 0.86);
+  --panel-solid: #101d2a;
+  --panel-2: rgba(21, 36, 51, 0.72);
+  --line: rgba(255, 255, 255, 0.07);
+  --line-strong: rgba(255, 255, 255, 0.13);
+
+  --text: #ecf4fd;
+  --text-2: #9cb0c6;
+  --text-3: #61758c;
+
+  --cyan: #22d3ee;
+  --gold: #f8c94a;
+  --green: #33d6a6;
+  --red: #ff6675;
+  --violet: #8b8cf0;
+
+  /* 可自定义强调色（白名单） */
+  --accent: #22d3ee;
+  --accent-soft: rgba(34, 211, 238, 0.12);
+  --accent-line: rgba(34, 211, 238, 0.45);
+
+  --radius-panel: 16px;
+  --radius-card: 14px;
+  --radius-btn: 10px;
+  --radius-chip: 999px;
+
+  --font-ui: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --font-num: "Rajdhani", "DIN Alternate", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --shadow-panel: 0 18px 48px -22px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  --shadow-pop: 0 24px 64px -20px rgba(0, 0, 0, 0.9);
+
+  --rail-w: 88px;
+  --topbar-h: 56px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 强调色白名单 */
+.accent-cyan { --accent: #22d3ee; --accent-soft: rgba(34, 211, 238, 0.12); --accent-line: rgba(34, 211, 238, 0.45); }
+.accent-gold { --accent: #f8c94a; --accent-soft: rgba(248, 201, 74, 0.12); --accent-line: rgba(248, 201, 74, 0.45); }
+.accent-green { --accent: #33d6a6; --accent-soft: rgba(51, 214, 166, 0.12); --accent-line: rgba(51, 214, 166, 0.45); }

@@ -1,0 +1,552 @@
+/* ===== 总览页：深色作战简报 + 毛玻璃 ===== */
+.ov-page { display: flex; flex-direction: column; }
+
+/* ---------- 英雄横幅 ---------- */
+.ov-hero {
+  position: relative;
+  height: 204px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  background: #0a121c;
+  box-shadow: var(--shadow-panel);
+}
+.ov-hero-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 20%;
+}
+.ov-hero-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(5, 11, 18, 0.96) 0%, rgba(5, 11, 18, 0.82) 30%, rgba(5, 11, 18, 0.22) 64%, rgba(5, 11, 18, 0.4) 100%),
+    linear-gradient(0deg, rgba(7, 14, 22, 0.9) 0%, rgba(7, 14, 22, 0.12) 48%, rgba(7, 14, 22, 0.45) 100%);
+}
+.ov-hero-content {
+  position: absolute;
+  top: 28px;
+  left: 26px;
+  z-index: 2;
+  max-width: 58%;
+  min-width: 0;
+}
+.ov-hero-content .eyebrow { color: var(--accent); }
+.ov-hero-title {
+  margin-top: 6px;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+}
+.ov-hero-title a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 6px;
+  transition: color 0.18s;
+}
+.ov-hero-title a:hover { color: var(--accent); }
+.ov-hero-title svg {
+  flex: 0 0 auto;
+  color: var(--text-3);
+  transition: color 0.18s, transform 0.18s;
+}
+.ov-hero-title a:hover svg { color: var(--accent); transform: translateY(-1px); }
+.ov-hero-slogan {
+  margin-top: 6px;
+  font-size: 12.5px;
+  letter-spacing: 0.02em;
+  color: var(--text-2);
+}
+.ov-hero-date {
+  position: absolute;
+  top: 26px;
+  right: 26px;
+  z-index: 2;
+  display: block;
+  text-align: right;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+}
+.ov-hero-day {
+  display: block;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+.ov-hero-meta {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 5px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  color: var(--text-3);
+}
+.ov-hero-cta {
+  position: absolute;
+  right: 24px;
+  bottom: 22px;
+  z-index: 3;
+  min-height: 40px;
+  padding: 0 18px;
+  font-size: 13px;
+  border-radius: 11px;
+}
+.ov-hero-cta svg { width: 16px; height: 16px; transition: transform 0.18s var(--ease); }
+.ov-hero-cta:hover svg { transform: translateX(3px); }
+
+/* ---------- 五人小队 ---------- */
+.ov-squad { margin-top: 14px; }
+.ov-squad-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  min-width: 0;
+}
+.ov-squad-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.ov-squad-head .btn { min-height: 32px; }
+.ov-members {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+.ov-member {
+  position: relative;
+  height: 152px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: linear-gradient(155deg, rgba(27, 44, 61, 0.9), rgba(10, 18, 28, 0.96));
+  box-shadow: var(--shadow-panel);
+  transition: transform 0.22s var(--ease), border-color 0.2s, box-shadow 0.22s;
+}
+.ov-member:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent-line);
+  box-shadow: 0 18px 34px -20px rgba(0, 0, 0, 0.95), 0 0 0 1px var(--accent-soft);
+}
+.ov-member::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  z-index: 3;
+  background: linear-gradient(90deg, var(--member-color, var(--accent)), transparent 85%);
+  opacity: 0.85;
+}
+.ov-member-visual {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 64%;
+  overflow: hidden;
+}
+.ov-member-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 0%;
+  opacity: 0.88;
+  filter: drop-shadow(-6px 8px 20px rgba(0, 0, 0, 0.6));
+  transition: transform 0.3s var(--ease), opacity 0.2s;
+}
+.ov-member:hover .ov-member-visual img { transform: scale(1.045); opacity: 1; }
+.ov-member-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-num);
+  font-size: 56px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
+  background:
+    radial-gradient(circle at 62% 22%, var(--member-color, var(--accent)), rgba(7, 14, 22, 0.15) 68%),
+    linear-gradient(160deg, rgba(32, 50, 68, 0.9), rgba(9, 17, 26, 0.98));
+  opacity: 0.55;
+}
+.ov-member-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(90deg, rgba(7, 14, 22, 0.97) 0%, rgba(7, 14, 22, 0.78) 36%, rgba(7, 14, 22, 0.06) 72%, rgba(7, 14, 22, 0.24) 100%),
+    linear-gradient(0deg, rgba(7, 14, 22, 0.72) 0%, transparent 44%);
+}
+.ov-member-leader {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 19px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: linear-gradient(140deg, #ffe08c, #f0b42d);
+  color: #1a1405;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  box-shadow: 0 4px 12px -6px rgba(248, 201, 74, 0.85);
+}
+.ov-member-info {
+  position: absolute;
+  left: 12px;
+  right: 10px;
+  bottom: 10px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ov-member-name {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.ov-member-line {
+  max-width: 100%;
+  font-size: 10.5px;
+  color: var(--text-2);
+}
+.ov-member-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+  font-size: 10px;
+  color: var(--text-3);
+}
+
+/* ---------- 看板网格 ---------- */
+.ov-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+.ov-blk { min-width: 0; }
+.ov-blk > .panel { height: 100%; display: flex; flex-direction: column; }
+.ov-blk--kpi { grid-column: span 12; }
+.ov-blk--trend { grid-column: span 6; }
+.ov-blk--roles,
+.ov-blk--radar { grid-column: span 3; }
+.ov-blk--maps { grid-column: span 7; }
+.ov-blk--recent { grid-column: span 5; }
+
+/* ---------- KPI ---------- */
+.ov-kpi-head { flex-wrap: wrap; row-gap: 8px; }
+.ov-kpi-head .segmented button { height: 32px; }
+.ov-kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.ov-kpi-cell {
+  min-width: 0;
+  padding: 13px 18px 12px;
+  border-left: 1px solid var(--line);
+}
+.ov-kpi-cell:first-child { border-left: 0; }
+.ov-kpi-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+}
+.ov-kpi-label svg { color: var(--accent); }
+.ov-kpi-value {
+  margin-top: 4px;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+.ov-kpi-unit {
+  margin-left: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.ov-kpi-sub {
+  margin-top: 3px;
+  font-size: 10.5px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ov-kpi-foot { padding: 8px 18px 10px; border-top: 1px solid var(--line); }
+
+/* ---------- 图表通用 ---------- */
+.ov-chart-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 4px 10px 0;
+}
+.ov-chart-foot { padding: 6px 16px 10px; }
+.ov-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.ov-legend--center { display: flex; width: 100%; justify-content: center; padding: 0 12px 2px; }
+.ov-legend-item { display: inline-flex; align-items: center; gap: 5px; }
+.ov-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 0;
+  border-top: 2px solid var(--cyan);
+  vertical-align: middle;
+}
+.ov-swatch--gold { border-top-style: dashed; border-top-color: var(--gold); }
+.ov-swatch--solid-gold { border-top-color: var(--gold); }
+.ov-swatch--gray { border-top: 1px dashed rgba(156, 176, 198, 0.7); }
+
+/* ---------- 干员定位 ---------- */
+.ov-roles {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px 8px;
+  min-width: 0;
+}
+.ov-roles > svg { flex: 0 0 auto; }
+.ov-role-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.ov-role-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-2);
+}
+.ov-role-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 3px;
+  flex: 0 0 auto;
+}
+.ov-role-count { font-size: 11.5px; color: var(--text); }
+
+/* ---------- 能力雷达 ---------- */
+.ov-radar-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2px 10px 2px;
+}
+
+/* ---------- 地图表现 ---------- */
+.ov-map-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px 16px 16px;
+}
+.ov-map {
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  overflow: hidden;
+  background: rgba(8, 16, 24, 0.62);
+  transition: transform 0.2s var(--ease), border-color 0.2s, box-shadow 0.2s;
+}
+.ov-map:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-line);
+  box-shadow: 0 14px 26px -18px rgba(0, 0, 0, 0.95);
+}
+.ov-map-thumb {
+  aspect-ratio: 16 / 8.6;
+  overflow: hidden;
+  background: var(--panel-solid);
+}
+.ov-map-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.32s var(--ease);
+}
+.ov-map:hover .ov-map-thumb img { transform: scale(1.05); }
+.ov-map-info { padding: 8px 10px 9px; }
+.ov-map-name {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ov-map-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 2px;
+}
+.ov-map-rate { font-size: 16px; font-weight: 700; }
+.ov-map-record { font-size: 10px; color: var(--text-3); white-space: nowrap; }
+
+/* ---------- 最近对局 ---------- */
+.ov-panel-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 28px;
+  color: var(--text-3);
+  transition: color 0.16s;
+  white-space: nowrap;
+}
+.ov-panel-link:hover { color: var(--accent); }
+.ov-recent-list { padding: 4px 8px 8px; }
+.ov-recent-head,
+.ov-recent-row {
+  display: grid;
+  grid-template-columns: 48px 46px minmax(0, 1fr) 46px 58px 78px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+}
+.ov-recent-head {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  border-bottom: 1px solid var(--line);
+}
+.ov-recent-row {
+  border-radius: 8px;
+  font-size: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 0.16s;
+}
+.ov-recent-row:last-child { border-bottom: 0; }
+.ov-recent-row:hover { background: rgba(255, 255, 255, 0.035); }
+.ov-recent-row .chip { height: 18px; padding: 0 7px; font-size: 10px; }
+.ov-num-right { text-align: right; }
+.ov-col-time { font-size: 10px; white-space: nowrap; }
+
+/* ---------- 全部隐藏时的恢复入口 ---------- */
+.ov-empty {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 18px 20px;
+  flex-wrap: wrap;
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 1200px) {
+  .ov-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .ov-blk--kpi,
+  .ov-blk--trend,
+  .ov-blk--maps,
+  .ov-blk--recent { grid-column: span 6; }
+  .ov-blk--roles,
+  .ov-blk--radar { grid-column: span 3; }
+}
+
+@media (max-width: 768px) {
+  .ov-hero { height: 214px; }
+  .ov-hero-bg { object-position: 56% 32%; }
+  .ov-hero-content { top: 18px; left: 16px; max-width: calc(100% - 118px); }
+  .ov-hero-title { font-size: 24px; }
+  .ov-hero-slogan { font-size: 11.5px; }
+  .ov-hero-date { top: 18px; right: 16px; }
+  .ov-hero-day { font-size: 24px; }
+  .ov-hero-cta { right: 16px; bottom: 16px; min-height: 42px; }
+  .ov-kpi-head .segmented button { height: 36px; padding: 0 11px; }
+
+  .ov-squad-head { flex-wrap: wrap; row-gap: 8px; }
+  .ov-squad-head .grow { display: none; }
+  .ov-members {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 2px 2px 8px;
+    scroll-snap-type: x mandatory;
+  }
+  .ov-member { flex: 0 0 214px; scroll-snap-align: start; }
+
+  .ov-grid { grid-template-columns: 1fr; }
+  .ov-blk--kpi,
+  .ov-blk--trend,
+  .ov-blk--roles,
+  .ov-blk--radar,
+  .ov-blk--maps,
+  .ov-blk--recent { grid-column: span 1; }
+
+  .ov-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ov-kpi-cell { padding: 12px 14px; }
+  .ov-kpi-cell:nth-child(3) { border-left: 0; }
+  .ov-kpi-cell:nth-child(n + 3) { border-top: 1px solid var(--line); }
+  .ov-kpi-value { font-size: 26px; }
+}
+
+@media (max-width: 560px) {
+  .ov-map-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ov-col-time { display: none; }
+  .ov-recent-head,
+  .ov-recent-row { grid-template-columns: 44px 42px minmax(0, 1fr) 42px 54px; }
+}
+
+@media (max-width: 480px) {
+  .ov-hero { height: 220px; }
+  .ov-hero-content { max-width: calc(100% - 96px); }
+  .ov-hero-title { font-size: 21px; }
+  .ov-hero-title svg { width: 13px; height: 13px; }
+  .ov-hero-slogan { font-size: 11px; }
+  .ov-hero-day { font-size: 21px; }
+  .ov-hero-meta { font-size: 8.5px; gap: 5px; }
+  .ov-hero-cta { min-height: 44px; padding: 0 14px; font-size: 12.5px; }
+
+  .ov-squad-title { font-size: 14px; }
+  .ov-member { flex-basis: 196px; height: 144px; }
+
+  .ov-kpi-value { font-size: 23px; }
+  .ov-kpi-unit { font-size: 11px; }
+  .ov-kpi-sub { font-size: 10px; }
+  .ov-kpi-foot { flex-direction: column; align-items: flex-start; gap: 3px; padding: 8px 14px 10px; }
+  .ov-kpi-grid .ov-kpi-cell { padding: 10px 12px; }
+
+  .ov-roles { padding: 10px 12px 6px; }
+  .ov-chart-foot { padding: 4px 12px 9px; font-size: 10px; }
+  .ov-map-grid { gap: 8px; padding: 10px 12px 12px; }
+  .ov-map-rate { font-size: 15px; }
+  .ov-recent-list { padding: 2px 4px 6px; }
+  .ov-recent-head,
+  .ov-recent-row { padding: 6px 8px; gap: 6px; }
+}
