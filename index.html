@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>深夜开黑车队 · 数据看板</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050810;
+  --cyan:#00E5FF; --magenta:#FF2E88; --violet:#8B5CFF; --amber:#FFC94D; --green:#3DFFA2; --red:#FF4D6D;
+  --card:rgba(13,18,36,.52);
+  --stroke:rgba(255,255,255,.09);
+  --text:#E9EFFC; --dim:rgba(205,218,245,.55); --faint:rgba(205,218,245,.32);
+  --num:'Rajdhani',ui-monospace,'SF Mono',Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--text);font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+body{min-height:100vh;overflow-x:hidden}
+
+/* ===== 赛博朋克氛围层 ===== */
+.bg-glow{position:fixed;inset:0;z-index:-3;pointer-events:none;
+  background:
+   radial-gradient(900px 520px at 12% -8%, rgba(0,229,255,.16), transparent 60%),
+   radial-gradient(820px 600px at 88% 4%, rgba(255,46,136,.13), transparent 62%),
+   radial-gradient(1000px 700px at 50% 115%, rgba(139,92,255,.14), transparent 65%),
+   var(--bg);
+}
+.bg-grid{position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:.5;
+  background-image:
+    linear-gradient(rgba(120,160,255,.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120,160,255,.045) 1px, transparent 1px);
+  background-size:44px 44px;
+  mask-image:radial-gradient(ellipse 90% 80% at 50% 20%, #000 30%, transparent 78%);
+}
+.bg-scan{position:fixed;inset:0;z-index:50;pointer-events:none;mix-blend-mode:overlay;opacity:.5;
+  background:repeating-linear-gradient(0deg, rgba(255,255,255,.028) 0 1px, transparent 1px 3px);
+}
+.bg-beam{position:fixed;left:0;right:0;top:-20%;height:22%;z-index:50;pointer-events:none;
+  background:linear-gradient(180deg, transparent, rgba(0,229,255,.05) 45%, rgba(0,229,255,.1) 50%, rgba(0,229,255,.05) 55%, transparent);
+  animation:beam 9s linear infinite;
+}
+@keyframes beam{0%{transform:translateY(-120%)}100%{transform:translateY(680%)}}
+
+/* ===== macOS 毛玻璃卡片 ===== */
+.glass{
+  position:relative;
+  background:var(--card);
+  -webkit-backdrop-filter:blur(22px) saturate(170%);
+  backdrop-filter:blur(22px) saturate(170%);
+  border:1px solid var(--stroke);
+  border-radius:20px;
+  box-shadow:0 18px 50px -18px rgba(0,0,0,.65), inset 0 0 0 1px rgba(255,255,255,.02);
+}
+.glass::before{content:"";position:absolute;left:14px;right:14px;top:0;height:1px;border-radius:1px;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);opacity:.5}
+.glass-hover{transition:transform .35s cubic-bezier(.22,1,.36,1), box-shadow .35s, border-color .35s}
+.glass-hover:hover{transform:translateY(-3px);border-color:rgba(0,229,255,.35);
+  box-shadow:0 22px 60px -18px rgba(0,0,0,.7), 0 0 28px -6px rgba(0,229,255,.25), inset 0 0 0 1px rgba(255,255,255,.03)}
+
+/* ===== 文字与装饰 ===== */
+.num{font-family:var(--num);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.tag{font-size:10px;letter-spacing:.28em;color:var(--faint);text-transform:uppercase}
+.neon-cyan{color:var(--cyan);text-shadow:0 0 18px rgba(0,229,255,.55)}
+.neon-magenta{color:var(--magenta);text-shadow:0 0 18px rgba(255,46,136,.5)}
+.title-glitch{position:relative}
+.title-glitch::before,.title-glitch::after{content:attr(data-text);position:absolute;inset:0;opacity:0;pointer-events:none}
+.title-glitch:hover::before{opacity:.8;color:var(--cyan);transform:translate(-2px,-1px);clip-path:inset(10% 0 55% 0)}
+.title-glitch:hover::after{opacity:.8;color:var(--magenta);transform:translate(2px,1px);clip-path:inset(60% 0 8% 0)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.45;box-shadow:0 0 4px var(--green)}}
+.chip{font-size:11px;padding:2px 9px;border-radius:999px;border:1px solid var(--stroke);background:rgba(255,255,255,.04);color:var(--dim)}
+.wl-dot{width:9px;height:9px;border-radius:3px;display:inline-block}
+
+/* 进场动画 */
+.rise{opacity:0;transform:translateY(18px);animation:rise .8s cubic-bezier(.22,1,.36,1) forwards}
+@keyframes rise{to{opacity:1;transform:none}}
+
+/* 队员卡 */
+.member-card{cursor:pointer;transition:all .3s cubic-bezier(.22,1,.36,1)}
+.member-card.active{border-color:var(--mc,#00E5FF);
+  box-shadow:0 0 0 1px var(--mc,#00E5FF), 0 0 26px -4px var(--mc,#00E5FF), 0 18px 50px -18px rgba(0,0,0,.65)}
+
+/* 按钮 */
+.btn{font-size:12px;letter-spacing:.12em;padding:8px 16px;border-radius:12px;border:1px solid var(--stroke);
+  background:rgba(255,255,255,.05);color:var(--text);cursor:pointer;transition:all .25s;
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.btn:hover{border-color:rgba(0,229,255,.5);color:var(--cyan);box-shadow:0 0 18px -4px rgba(0,229,255,.4)}
+.btn-danger:hover{border-color:rgba(255,77,109,.6);color:var(--red);box-shadow:0 0 18px -4px rgba(255,77,109,.4)}
+.btn-primary{background:linear-gradient(135deg, rgba(0,229,255,.18), rgba(139,92,255,.18));border-color:rgba(0,229,255,.45);color:var(--cyan)}
+
+/* 表单 */
+.field{width:100%;background:rgba(5,8,16,.6);border:1px solid var(--stroke);border-radius:10px;
+  padding:7px 10px;font-size:12px;color:var(--text);outline:none;transition:border-color .2s}
+.field:focus{border-color:rgba(0,229,255,.55);box-shadow:0 0 0 3px rgba(0,229,255,.08)}
+.field-lbl{font-size:10px;letter-spacing:.15em;color:var(--faint);display:block;margin:8px 0 4px}
+input[type=range]{accent-color:var(--cyan)}
+
+/* 弹窗 */
+.modal-mask{position:fixed;inset:0;z-index:100;background:rgba(3,5,12,.6);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;padding:24px;
+  opacity:0;pointer-events:none;transition:opacity .3s}
+.modal-mask.open{opacity:1;pointer-events:auto}
+.modal-panel{width:min(920px,96vw);max-height:88vh;overflow:auto;transform:translateY(14px) scale(.98);transition:transform .35s cubic-bezier(.22,1,.36,1)}
+.modal-mask.open .modal-panel{transform:none}
+.modal-panel::-webkit-scrollbar{width:6px}
+.modal-panel::-webkit-scrollbar-thumb{background:rgba(0,229,255,.25);border-radius:3px}
+
+/* 图表容器 */
+.chart{width:100%;height:100%}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px}
+.section-title{font-size:13px;font-weight:600;letter-spacing:.06em}
+.section-sub{font-size:11px;color:var(--faint)}
+.divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);margin:0 0 12px}
+</style>
+</head>
+<body>
+<div class="bg-glow"></div>
+<div class="bg-grid"></div>
+<div class="bg-scan"></div>
+<div class="bg-beam"></div>
+
+<div class="max-w-[1440px] mx-auto px-5 lg:px-8 py-6">
+
+  <!-- ===== Header ===== -->
+  <header class="glass glass-hover rise px-6 py-5 flex flex-wrap items-center gap-x-8 gap-y-4" style="animation-delay:.02s">
+    <div class="flex items-center gap-4 min-w-0">
+      <div class="text-3xl">🎮</div>
+      <div class="min-w-0">
+        <div class="flex items-center gap-3">
+          <h1 id="teamName" data-text="深夜开黑车队" class="title-glitch text-xl font-bold tracking-wide truncate">深夜开黑车队</h1>
+          <span class="chip num">S13 · RANKED</span>
+        </div>
+        <p id="teamSlogan" class="text-xs mt-1" style="color:var(--dim)">白天各自搬砖，深夜峡谷相见</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="dot"></span><span class="text-[11px] tracking-[.2em]" style="color:var(--dim)">SQUAD ONLINE</span>
+      <span class="chip num ml-2">LAT 12ms</span>
+    </div>
+    <div class="flex-1"></div>
+    <div class="text-right">
+      <div id="clock" class="num text-3xl font-bold neon-cyan leading-none">00:00:00</div>
+      <div id="dateLine" class="text-[11px] mt-1" style="color:var(--faint)"></div>
+    </div>
+    <div class="flex gap-2">
+      <button class="btn btn-primary" onclick="openEditor()">✎ 编辑数据</button>
+      <button class="btn btn-danger" onclick="resetData()">↺ 恢复默认</button>
+    </div>
+  </header>
+
+  <!-- ===== KPI 带 ===== -->
+  <section class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-5">
+    <div class="glass glass-hover rise p-5" style="animation-delay:.06s">
+      <div class="tag">总场次 / GAMES</div>
+      <div class="num text-4xl font-bold mt-2 neon-cyan" data-count id="kpiGames">0</div>
+      <div class="text-[11px] mt-1" style="color:var(--dim)">本赛季五排场次</div>
+    </div>
+    <div class="glass glass-hover rise p-5" style="animation-delay:.12s">
+      <div class="tag">团队胜率 / WINRATE</div>
+      <div class="num text-4xl font-bold mt-2" style="color:var(--green);text-shadow:0 0 18px rgba(61,255,162,.5)"><span data-count id="kpiWin">0</span><span class="text-xl">%</span></div>
+      <div class="text-[11px] mt-1" style="color:var(--dim)">高于全服 78% 车队</div>
+    </div>
+    <div class="glass glass-hover rise p-5" style="animation-delay:.18s">
+      <div class="tag">最高连胜 / STREAK</div>
+      <div class="num text-4xl font-bold mt-2" style="color:var(--amber);text-shadow:0 0 18px rgba(255,201,77,.5)"><span data-count id="kpiStreak">0</span><span class="text-xl"> 连</span></div>
+      <div class="text-[11px] mt-1" style="color:var(--dim)">10月12日 凌晨封神夜</div>
+    </div>
+    <div class="glass glass-hover rise p-5" style="animation-delay:.24s">
+      <div class="tag">连麦时长 / VOICE</div>
+      <div class="num text-4xl font-bold mt-2 neon-magenta"><span data-count id="kpiVoice">0</span><span class="text-xl">h</span></div>
+      <div class="text-[11px] mt-1" style="color:var(--dim)">废话含量约 96%</div>
+    </div>
+    <div class="glass glass-hover rise p-5" style="animation-delay:.3s">
+      <div class="tag">本周开黑 / THIS WEEK</div>
+      <div class="num text-4xl font-bold mt-2" style="color:var(--violet);text-shadow:0 0 18px rgba(139,92,255,.5)"><span data-count id="kpiWeek">0</span><span class="text-xl"> 局</span></div>
+      <div class="text-[11px] mt-1" style="color:var(--dim)">周五夜是黄金档</div>
+    </div>
+  </section>
+
+  <!-- ===== 队员 + 雷达 + 趋势 ===== -->
+  <section class="grid grid-cols-12 gap-4 mt-5">
+    <div class="col-span-12 lg:col-span-4 flex flex-col gap-3" id="memberList"></div>
+
+    <div class="col-span-12 lg:col-span-8 flex flex-col gap-4">
+      <div class="glass rise p-5 grid grid-cols-12 gap-4" style="animation-delay:.4s">
+        <div class="col-span-12 md:col-span-5">
+          <div class="section-head"><span class="section-title">五维能力</span><span class="section-sub" id="radarWho"></span></div>
+          <div id="radarChart" class="chart" style="height:260px"></div>
+        </div>
+        <div class="col-span-12 md:col-span-7 flex flex-col">
+          <div class="section-head"><span class="section-title">选手档案</span><span class="section-sub">PROFILE</span></div>
+          <div id="memberDetail" class="flex-1"></div>
+        </div>
+      </div>
+      <div class="glass glass-hover rise p-5" style="animation-delay:.46s">
+        <div class="section-head">
+          <span class="section-title">近 20 场胜率走势</span>
+          <span class="section-sub">滚动 5 场胜率 · WIN TREND</span>
+        </div>
+        <div id="trendChart" class="chart" style="height:210px"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 趣味区 1：日历 + 鸽王 ===== -->
+  <section class="grid grid-cols-12 gap-4 mt-5">
+    <div class="col-span-12 lg:col-span-7 glass glass-hover rise p-5" style="animation-delay:.52s">
+      <div class="section-head">
+        <span class="section-title">开黑热力日历</span>
+        <span class="section-sub">深夜亮剑记录 · HEATMAP</span>
+      </div>
+      <div id="calendarChart" class="chart" style="height:220px"></div>
+    </div>
+    <div class="col-span-12 lg:col-span-5 glass glass-hover rise p-5" style="animation-delay:.58s">
+      <div class="section-head">
+        <span class="section-title">🕊️ 鸽王榜</span>
+        <span class="section-sub">“在路上了” · 放鸽子次数</span>
+      </div>
+      <div id="pigeonChart" class="chart" style="height:220px"></div>
+    </div>
+  </section>
+
+  <!-- ===== 趣味区 2：C/送 + 拍档 ===== -->
+  <section class="grid grid-cols-12 gap-4 mt-5 mb-8">
+    <div class="col-span-12 lg:col-span-5 glass glass-hover rise p-5" style="animation-delay:.64s">
+      <div class="section-head">
+        <span class="section-title">谁在 C · 谁在送</span>
+        <span class="section-sub">战犯与大腿一线之隔</span>
+      </div>
+      <div id="carryChart" class="chart" style="height:250px"></div>
+    </div>
+    <div class="col-span-12 lg:col-span-7 glass glass-hover rise p-5" style="animation-delay:.7s">
+      <div class="section-head">
+        <span class="section-title">最佳拍档矩阵</span>
+        <span class="section-sub">双人同队胜率 · 锁死这对 CP</span>
+      </div>
+      <div id="duoChart" class="chart" style="height:250px"></div>
+    </div>
+  </section>
+
+  <footer class="text-center pb-8 rise" style="animation-delay:.76s">
+    <div class="text-[11px] tracking-[.3em]" style="color:var(--faint)">GG WP · 今晚 8 点 · 老地方 · 不许鸽</div>
+  </footer>
+</div>
+
+<!-- ===== 编辑弹窗 ===== -->
+<div class="modal-mask" id="editorMask">
+  <div class="glass modal-panel p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <div class="section-title text-base">编辑车队数据</div>
+        <div class="section-sub">保存后自动存入浏览器 localStorage，刷新不丢</div>
+      </div>
+      <button class="btn" onclick="closeEditor()">✕ 关闭</button>
+    </div>
+    <div class="divider"></div>
+    <div class="grid grid-cols-12 gap-3">
+      <div class="col-span-12 md:col-span-5">
+        <span class="field-lbl">车队名</span><input class="field" id="fTeamName">
+      </div>
+      <div class="col-span-12 md:col-span-7">
+        <span class="field-lbl">Slogan</span><input class="field" id="fTeamSlogan">
+      </div>
+    </div>
+    <div class="flex items-center justify-between mt-5 mb-2">
+      <span class="section-title">队员名单</span>
+      <button class="btn btn-primary" onclick="addMemberRow()">＋ 添加队员</button>
+    </div>
+    <div id="editorMembers" class="flex flex-col gap-3"></div>
+    <div class="flex justify-end gap-2 mt-6">
+      <button class="btn" onclick="closeEditor()">取消</button>
+      <button class="btn btn-primary" onclick="saveEditor()">✓ 保存并刷新看板</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= 数据层 ================= */
+const LS_KEY = 'squad-dashboard-v1';
+
+const PALETTE = ['#00E5FF','#FF2E88','#8B5CFF','#3DFFA2','#FFC94D','#FF4D6D','#4DA3FF'];
+const ROLES = ['上单','打野','中单','ADC','辅助'];
+
+function defaultData(){
+  const members = [
+    {id:'m1', name:'夜雨声烦', avatar:'🌙', role:'打野', title:'节奏发动机', color:'#00E5FF',
+     kda:8.6, winRate:68, mvp:47, games:132, pigeon:2, carry:82, feed:15,
+     heroes:['盲僧','佛耶戈','男枪'], stats:{输出:88,生存:76,视野:85,团队:90,发育:84},
+     recent:['W','W','L','W','W','W','L','W']},
+    {id:'m2', name:'西北砍王', avatar:'⚔️', role:'上单', title:'要么C要么送', color:'#FF2E88',
+     kda:5.2, winRate:55, mvp:28, games:130, pigeon:1, carry:45, feed:78,
+     heroes:['剑姬','腕豪','奥拉夫'], stats:{输出:85,生存:52,视野:48,团队:58,发育:72},
+     recent:['L','W','L','L','W','L','W','L']},
+    {id:'m3', name:'键盘冒奶', avatar:'🥛', role:'中单', title:'毒奶体质', color:'#8B5CFF',
+     kda:6.8, winRate:58, mvp:22, games:118, pigeon:5, carry:60, feed:40,
+     heroes:['阿狸','辛德拉','卡牌'], stats:{输出:80,生存:66,视野:70,团队:75,发育:78},
+     recent:['W','L','W','W','L','W','W','L']},
+    {id:'m4', name:'芝士雪豹', avatar:'🐆', role:'ADC', title:'输出机器·真大腿', color:'#3DFFA2',
+     kda:9.4, winRate:71, mvp:53, games:135, pigeon:0, carry:95, feed:10,
+     heroes:['厄斐琉斯','泽丽','卡莎'], stats:{输出:96,生存:80,视野:62,团队:82,发育:92},
+     recent:['W','W','W','W','L','W','W','W']},
+    {id:'m5', name:'麻辣香锅不要辣', avatar:'🍲', role:'辅助', title:'团队粘合剂·鸽王本王', color:'#FFC94D',
+     kda:7.2, winRate:63, mvp:12, games:120, pigeon:8, carry:35, feed:55,
+     heroes:['锤石','露露','泰坦'], stats:{输出:38,生存:72,视野:95,团队:94,发育:45},
+     recent:['W','L','W','L','W','W','L','W']},
+  ];
+  const duo = {};
+  const pairs = {};
+  const names = members.map(m=>m.name);
+  const seed = {'夜雨声烦|芝士雪豹':74,'夜雨声烦|键盘冒奶':62,'夜雨声烦|西北砍王':55,'夜雨声烦|麻辣香锅不要辣':66,
+    '芝士雪豹|麻辣香锅不要辣':78,'芝士雪豹|键盘冒奶':65,'芝士雪豹|西北砍王':58,'键盘冒奶|西北砍王':49,
+    '键盘冒奶|麻辣香锅不要辣':57,'西北砍王|麻辣香锅不要辣':52};
+  Object.assign(duo, seed);
+  // 开黑日历：近 150 天，周五/周六加权
+  const calendar = {};
+  const today = new Date();
+  for(let i=150;i>=0;i--){
+    const d = new Date(today); d.setDate(d.getDate()-i);
+    const day = d.getDay();
+    const base = (day===5||day===6) ? 0.82 : (day===0? 0.6 : 0.35);
+    if(Math.random() < base){
+      const v = 1 + Math.floor(Math.random()*((day===5||day===6)?5:3));
+      calendar[d.toISOString().slice(0,10)] = v;
+    }
+  }
+  // 近 20 场战绩（团队）
+  const trend = ['W','W','L','W','W','W','L','W','L','W','W','L','W','W','W','W','L','W','W','W'];
+  return {
+    team:{name:'深夜开黑车队', slogan:'白天各自搬砖，深夜峡谷相见'},
+    kpi:{games:236, winRate:61, streak:9, voice:312, week:14},
+    members, duo, calendar, trend
+  };
+}
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  const d = defaultData();
+  localStorage.setItem(LS_KEY, JSON.stringify(d));
+  return d;
+}
+function persist(){ localStorage.setItem(LS_KEY, JSON.stringify(DATA)); }
+
+let DATA = loadData();
+let selectedId = DATA.members[0].id;
+const charts = {};
+
+/* ================= 工具 ================= */
+const $ = id => document.getElementById(id);
+const neonTooltip = {
+  backgroundColor:'rgba(10,14,28,.85)', borderColor:'rgba(0,229,255,.3)', borderWidth:1,
+  textStyle:{color:'#E9EFFC', fontSize:12},
+  extraCssText:'backdrop-filter:blur(10px);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.5);'
+};
+const AXIS_STYLE = {
+  axisLine:{lineStyle:{color:'rgba(180,200,240,.18)'}},
+  axisLabel:{color:'rgba(205,218,245,.5)', fontSize:10, fontFamily:'Rajdhani, monospace'},
+  splitLine:{lineStyle:{color:'rgba(150,180,255,.07)'}}
+};
+function makeChart(id){
+  if(charts[id]) charts[id].dispose();
+  charts[id] = echarts.init($(id), null, {renderer:'canvas'});
+  return charts[id];
+}
+function countUp(){
+  document.querySelectorAll('[data-count]').forEach(el=>{
+    const target = +el.textContent || +el.dataset.count || 0;
+    const t0 = performance.now(), dur = 1200;
+    const step = t=>{
+      const p = Math.min(1,(t-t0)/dur), e = 1-Math.pow(1-p,3);
+      el.textContent = Math.round(target*e);
+      if(p<1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+}
+
+/* ================= 渲染：Header / KPI ================= */
+function renderHeader(){
+  $('teamName').textContent = DATA.team.name;
+  $('teamName').dataset.text = DATA.team.name;
+  $('teamSlogan').textContent = DATA.team.slogan;
+  $('kpiGames').textContent = DATA.kpi.games;
+  $('kpiWin').textContent = DATA.kpi.winRate;
+  $('kpiStreak').textContent = DATA.kpi.streak;
+  $('kpiVoice').textContent = DATA.kpi.voice;
+  $('kpiWeek').textContent = DATA.kpi.week;
+  countUp();
+}
+
+/* ================= 渲染：队员列表 ================= */
+function renderMembers(){
+  const box = $('memberList');
+  box.innerHTML = '';
+  DATA.members.forEach((m,i)=>{
+    const card = document.createElement('div');
+    card.className = 'glass member-card rise p-4' + (m.id===selectedId?' active':'');
+    card.style.setProperty('--mc', m.color);
+    card.style.animationDelay = (0.1 + i*0.06) + 's';
+    card.onclick = ()=>{ selectedId = m.id; renderMembers(); renderRadar(); renderDetail(); };
+    const wl = m.recent.map(r=>`<span class="wl-dot" style="background:${r==='W'?'#3DFFA2':'#FF4D6D'};box-shadow:0 0 6px ${r==='W'?'rgba(61,255,162,.6)':'rgba(255,77,109,.6)'}"></span>`).join('');
+    card.innerHTML = `
+      <div class="flex items-center gap-3">
+        <div class="text-2xl w-11 h-11 flex items-center justify-center rounded-xl"
+             style="background:rgba(255,255,255,.05);border:1px solid ${m.color}44;box-shadow:inset 0 0 14px ${m.color}22">${m.avatar}</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-sm truncate">${m.name}</span>
+            <span class="chip" style="border-color:${m.color}55;color:${m.color}">${m.role}</span>
+          </div>
+          <div class="text-[11px] mt-0.5 truncate" style="color:var(--faint)">${m.title}</div>
+        </div>
+        <div class="text-right">
+          <div class="num text-lg font-bold" style="color:${m.color}">${m.winRate}%</div>
+          <div class="text-[10px]" style="color:var(--faint)">胜率</div>
+        </div>
+      </div>
+      <div class="grid grid-cols-3 gap-2 mt-3 text-center">
+        <div class="rounded-lg py-1.5" style="background:rgba(255,255,255,.03)">
+          <div class="num text-sm font-bold">${m.kda}</div><div class="text-[9px]" style="color:var(--faint)">KDA</div>
+        </div>
+        <div class="rounded-lg py-1.5" style="background:rgba(255,255,255,.03)">
+          <div class="num text-sm font-bold">${m.mvp}</div><div class="text-[9px]" style="color:var(--faint)">MVP</div>
+        </div>
+        <div class="rounded-lg py-1.5" style="background:rgba(255,255,255,.03)">
+          <div class="num text-sm font-bold">${m.games}</div><div class="text-[9px]" style="color:var(--faint)">场次</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5 mt-3">${wl}<span class="text-[10px] ml-auto" style="color:var(--faint)">近8场</span></div>`;
+    box.appendChild(card);
+  });
+}
+
+/* ================= 渲染：雷达 + 档案 ================= */
+function currentMember(){ return DATA.members.find(m=>m.id===selectedId) || DATA.members[0]; }
+
+function renderRadar(){
+  const m = currentMember();
+  $('radarWho').textContent = m.name + ' · ' + m.role;
+  const keys = Object.keys(m.stats);
+  const c = makeChart('radarChart');
+  c.setOption({
+    radar:{
+      indicator: keys.map(k=>({name:k, max:100})),
+      radius:'68%', center:['50%','52%'],
+      axisName:{color:'rgba(220,230,255,.75)', fontSize:11},
+      splitLine:{lineStyle:{color:'rgba(150,180,255,.12)'}},
+      splitArea:{areaStyle:{color:['rgba(255,255,255,0)','rgba(140,170,255,.03)']}},
+      axisLine:{lineStyle:{color:'rgba(150,180,255,.15)'}}
+    },
+    series:[{
+      type:'radar',
+      data:[{value:keys.map(k=>m.stats[k]), name:m.name}],
+      lineStyle:{color:m.color, width:2, shadowColor:m.color, shadowBlur:12},
+      itemStyle:{color:m.color},
+      areaStyle:{color:m.color, opacity:.18},
+      symbolSize:5
+    }]
+  }, true);
+}
+
+function renderDetail(){
+  const m = currentMember();
+  const box = $('memberDetail');
+  const heroChips = m.heroes.map(h=>`<span class="chip">${h}</span>`).join('');
+  const winW = Math.round(m.games * m.winRate/100);
+  box.innerHTML = `
+    <div class="grid grid-cols-2 gap-3">
+      <div class="rounded-xl p-3" style="background:rgba(255,255,255,.03);border:1px solid var(--stroke)">
+        <div class="text-[10px]" style="color:var(--faint)">赛季战绩</div>
+        <div class="num text-xl font-bold mt-1">${winW}<span style="color:var(--faint)">胜</span> ${m.games-winW}<span style="color:var(--faint)">负</span></div>
+      </div>
+      <div class="rounded-xl p-3" style="background:rgba(255,255,255,.03);border:1px solid var(--stroke)">
+        <div class="text-[10px]" style="color:var(--faint)">MVP 率</div>
+        <div class="num text-xl font-bold mt-1" style="color:${m.color}">${Math.round(m.mvp/m.games*100)}%</div>
+      </div>
+      <div class="rounded-xl p-3" style="background:rgba(255,255,255,.03);border:1px solid var(--stroke)">
+        <div class="text-[10px]" style="color:var(--faint)">放鸽子</div>
+        <div class="num text-xl font-bold mt-1" style="color:${m.pigeon>=5?'#FF4D6D':'#E9EFFC'}">${m.pigeon}<span style="color:var(--faint)"> 次</span> ${m.pigeon>=5?'🕊️':''}</div>
+      </div>
+      <div class="rounded-xl p-3" style="background:rgba(255,255,255,.03);border:1px solid var(--stroke)">
+        <div class="text-[10px]" style="color:var(--faint)">队内标签</div>
+        <div class="text-sm font-semibold mt-1">${m.title}</div>
+      </div>
+    </div>
+    <div class="mt-3">
+      <div class="text-[10px] mb-2" style="color:var(--faint)">擅长英雄</div>
+      <div class="flex flex-wrap gap-2">${heroChips}</div>
+    </div>`;
+}
+
+/* ================= 渲染：胜率走势 ================= */
+function renderTrend(){
+  const t = DATA.trend;
+  // 滚动 5 场胜率
+  const roll = t.map((_,i)=>{
+    const s = Math.max(0, i-4);
+    const win = t.slice(s, i+1).filter(x=>x==='W').length;
+    return Math.round(win / (i-s+1) * 100);
+  });
+  const c = makeChart('trendChart');
+  c.setOption({
+    grid:{left:36, right:16, top:20, bottom:26},
+    tooltip:{...neonTooltip, trigger:'axis'},
+    xAxis:{type:'category', data:t.map((_,i)=>'G'+(i+1)), ...AXIS_STYLE, boundaryGap:false},
+    yAxis:{type:'value', min:0, max:100, ...AXIS_STYLE, axisLabel:{...AXIS_STYLE.axisLabel, formatter:'{value}%'}},
+    series:[{
+      type:'line', data:roll, smooth:true, symbol:'circle', symbolSize:6,
+      lineStyle:{width:2.5, color:'#00E5FF', shadowColor:'rgba(0,229,255,.8)', shadowBlur:14},
+      itemStyle:{color:'#00E5FF', borderColor:'#050810', borderWidth:2},
+      areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,
+        colorStops:[{offset:0,color:'rgba(0,229,255,.28)'},{offset:1,color:'rgba(0,229,255,0)'}]}},
+      markLine:{silent:true, symbol:'none', data:[{yAxis:50}],
+        lineStyle:{color:'rgba(255,46,136,.45)', type:'dashed'},
+        label:{color:'rgba(255,46,136,.7)', fontSize:10, formatter:'50%'}}
+    }]
+  }, true);
+}
+
+/* ================= 渲染：日历热力 ================= */
+function renderCalendar(){
+  const data = Object.entries(DATA.calendar).map(([d,v])=>[d,v]);
+  const dates = Object.keys(DATA.calendar).sort();
+  const c = makeChart('calendarChart');
+  c.setOption({
+    tooltip:{...neonTooltip, formatter:p=>`${p.value[0]}<br/>开黑 <b style="color:#00E5FF">${p.value[1]}</b> 局`},
+    visualMap:{min:1, max:5, show:false, inRange:{color:['rgba(0,229,255,.12)','rgba(0,229,255,.35)','rgba(61,255,162,.5)','rgba(255,201,77,.75)','#FF2E88']}},
+    calendar:{
+      range:[dates[0], dates[dates.length-1]],
+      left:44, right:12, top:30, bottom:10,
+      cellSize:['auto', 22],
+      itemStyle:{borderColor:'rgba(5,8,16,.9)', borderWidth:3, borderRadius:4},
+      splitLine:{lineStyle:{color:'rgba(150,180,255,.25)', width:1}},
+      dayLabel:{color:'rgba(205,218,245,.45)', fontSize:9, nameMap:['日','一','二','三','四','五','六']},
+      monthLabel:{color:'rgba(205,218,245,.6)', fontSize:10, nameMap:'ZH'},
+      yearLabel:{show:false}
+    },
+    series:{type:'heatmap', coordinateSystem:'calendar', data}
+  }, true);
+}
+
+/* ================= 渲染：鸽王榜 ================= */
+function renderPigeon(){
+  const list = [...DATA.members].sort((a,b)=>b.pigeon-a.pigeon);
+  const c = makeChart('pigeonChart');
+  c.setOption({
+    grid:{left:100, right:40, top:10, bottom:10},
+    tooltip:{...neonTooltip, formatter:p=>`${p.name}<br/>放鸽子 <b style="color:#FF2E88">${p.value}</b> 次`},
+    xAxis:{type:'value', ...AXIS_STYLE, splitLine:{show:false}, axisLabel:{show:false}, axisLine:{show:false}},
+    yAxis:{type:'category', inverse:true, data:list.map(m=>m.avatar+' '+m.name),
+      ...AXIS_STYLE, axisLine:{show:false}, axisTick:{show:false},
+      axisLabel:{color:'rgba(220,230,255,.8)', fontSize:11}},
+    series:[{
+      type:'bar', data:list.map((m,i)=>({
+        value:m.pigeon,
+        itemStyle:{
+          color:{type:'linear',x:0,y:0,x2:1,y2:0,colorStops:[
+            {offset:0,color:'rgba(255,46,136,.15)'},{offset:1,color:i===0?'#FF2E88':'rgba(255,46,136,.55)'}]},
+          borderRadius:[0,8,8,0],
+          shadowColor:'rgba(255,46,136,.5)', shadowBlur:i===0?14:0
+        }
+      })),
+      barWidth:16,
+      label:{show:true, position:'right', color:'#FF2E88', fontFamily:'Rajdhani, monospace', fontWeight:'bold',
+        formatter:p=> p.value + (p.dataIndex===0?' 🕊️鸽王':'')},
+      showBackground:true, backgroundStyle:{color:'rgba(255,255,255,.03)', borderRadius:8}
+    }]
+  }, true);
+}
+
+/* ================= 渲染：谁C谁送 ================= */
+function renderCarry(){
+  const list = [...DATA.members].sort((a,b)=>(b.carry-b.feed)-(a.carry-a.feed));
+  const c = makeChart('carryChart');
+  c.setOption({
+    grid:{left:100, right:30, top:14, bottom:24},
+    tooltip:{...neonTooltip, formatter:p=>{
+      const m = list[p.dataIndex];
+      return `${m.name}<br/>大腿指数 <b style="color:#3DFFA2">${m.carry}</b> · 战犯指数 <b style="color:#FF4D6D">${m.feed}</b>`;
+    }},
+    xAxis:{type:'value', min:-100, max:100, ...AXIS_STYLE,
+      axisLabel:{...AXIS_STYLE.axisLabel, formatter:v=>Math.abs(v)}},
+    yAxis:{type:'category', inverse:true, data:list.map(m=>m.avatar+' '+m.name),
+      ...AXIS_STYLE, axisLine:{show:false}, axisTick:{show:false},
+      axisLabel:{color:'rgba(220,230,255,.8)', fontSize:11}},
+    series:[
+      {name:'在C', type:'bar', stack:'x', barWidth:14,
+        data:list.map(m=>({value:m.carry, itemStyle:{color:{type:'linear',x:0,y:0,x2:1,y2:0,
+          colorStops:[{offset:0,color:'rgba(61,255,162,.2)'},{offset:1,color:'#3DFFA2'}]},borderRadius:[0,7,7,0]}})),
+        label:{show:false}},
+      {name:'在送', type:'bar', stack:'x', barWidth:14,
+        data:list.map(m=>({value:-m.feed, itemStyle:{color:{type:'linear',x:1,y:0,x2:0,y2:0,
+          colorStops:[{offset:0,color:'rgba(255,77,109,.2)'},{offset:1,color:'#FF4D6D'}]},borderRadius:[7,0,0,7]}})),
+        label:{show:false}}
+    ]
+  }, true);
+}
+
+/* ================= 渲染：拍档矩阵 ================= */
+function duoKey(a,b){ return [a,b].sort().join('|'); }
+function renderDuo(){
+  const names = DATA.members.map(m=>m.name);
+  const data = [];
+  names.forEach((a,i)=>names.forEach((b,j)=>{
+    if(i===j) return;
+    const v = DATA.duo[duoKey(a,b)];
+    if(v!=null) data.push([j, i, v]);
+  }));
+  const c = makeChart('duoChart');
+  c.setOption({
+    grid:{left:96, right:16, top:10, bottom:56},
+    tooltip:{...neonTooltip, formatter:p=>`${names[p.value[1]]} × ${names[p.value[0]]}<br/>同队胜率 <b style="color:#8B5CFF">${p.value[2]}%</b>`},
+    xAxis:{type:'category', data:names, ...AXIS_STYLE, splitArea:{show:false},
+      axisLabel:{...AXIS_STYLE.axisLabel, fontSize:10, rotate:20}},
+    yAxis:{type:'category', data:names, ...AXIS_STYLE, axisLabel:{...AXIS_STYLE.axisLabel, fontSize:10}},
+    visualMap:{min:40, max:80, calculable:true, orient:'horizontal', left:'center', bottom:0,
+      textStyle:{color:'rgba(205,218,245,.5)', fontSize:10},
+      inRange:{color:['rgba(139,92,255,.08)','rgba(139,92,255,.45)','#00E5FF']}},
+    series:[{
+      type:'heatmap', data,
+      label:{show:true, color:'rgba(233,239,252,.85)', fontSize:10, fontFamily:'Rajdhani, monospace', formatter:p=>p.value[2]},
+      itemStyle:{borderColor:'rgba(5,8,16,.9)', borderWidth:4, borderRadius:6},
+      emphasis:{itemStyle:{shadowBlur:16, shadowColor:'rgba(0,229,255,.6)'}}
+    }]
+  }, true);
+}
+
+/* ================= 全量渲染 ================= */
+function renderAll(){
+  renderHeader();
+  renderMembers();
+  renderRadar();
+  renderDetail();
+  renderTrend();
+  renderCalendar();
+  renderPigeon();
+  renderCarry();
+  renderDuo();
+}
+
+/* ================= 编辑器 ================= */
+function openEditor(){
+  $('fTeamName').value = DATA.team.name;
+  $('fTeamSlogan').value = DATA.team.slogan;
+  buildMemberRows();
+  $('editorMask').classList.add('open');
+}
+function closeEditor(){ $('editorMask').classList.remove('open'); }
+
+function memberRowHTML(m){
+  const statSliders = Object.keys(m.stats).map(k=>`
+    <div class="col-span-6 md:col-span-4">
+      <span class="field-lbl">${k} <span class="num" id="sv-${m.id}-${k}">${m.stats[k]}</span></span>
+      <input type="range" min="0" max="100" value="${m.stats[k]}" class="w-full"
+        data-stat="${k}" data-mid="${m.id}"
+        oninput="document.getElementById('sv-${m.id}-${k}').textContent=this.value">
+    </div>`).join('');
+  return `
+  <div class="rounded-2xl p-4" style="background:rgba(255,255,255,.03);border:1px solid var(--stroke)" data-row="${m.id}">
+    <div class="grid grid-cols-12 gap-3">
+      <div class="col-span-3 md:col-span-2"><span class="field-lbl">头像 Emoji</span><input class="field" data-f="avatar" value="${m.avatar}"></div>
+      <div class="col-span-9 md:col-span-4"><span class="field-lbl">游戏 ID</span><input class="field" data-f="name" value="${m.name}"></div>
+      <div class="col-span-6 md:col-span-3"><span class="field-lbl">位置</span>
+        <select class="field" data-f="role">${ROLES.map(r=>`<option ${r===m.role?'selected':''}>${r}</option>`).join('')}</select>
+      </div>
+      <div class="col-span-6 md:col-span-3"><span class="field-lbl">擅长英雄（逗号分隔）</span><input class="field" data-f="heroes" value="${m.heroes.join(',')}"></div>
+      <div class="col-span-12"><span class="field-lbl">队内标签 / 绰号</span><input class="field" data-f="title" value="${m.title}"></div>
+      <div class="col-span-4 md:col-span-2"><span class="field-lbl">KDA</span><input class="field num" type="number" step="0.1" data-f="kda" value="${m.kda}"></div>
+      <div class="col-span-4 md:col-span-2"><span class="field-lbl">胜率 %</span><input class="field num" type="number" data-f="winRate" value="${m.winRate}"></div>
+      <div class="col-span-4 md:col-span-2"><span class="field-lbl">MVP</span><input class="field num" type="number" data-f="mvp" value="${m.mvp}"></div>
+      <div class="col-span-4 md:col-span-2"><span class="field-lbl">场次</span><input class="field num" type="number" data-f="games" value="${m.games}"></div>
+      <div class="col-span-4 md:col-span-2"><span class="field-lbl">放鸽次数</span><input class="field num" type="number" data-f="pigeon" value="${m.pigeon}"></div>
+      <div class="col-span-4 md:col-span-1"><span class="field-lbl">C 指数</span><input class="field num" type="number" data-f="carry" value="${m.carry}"></div>
+      <div class="col-span-4 md:col-span-1"><span class="field-lbl">送指数</span><input class="field num" type="number" data-f="feed" value="${m.feed}"></div>
+      ${statSliders}
+    </div>
+    <div class="flex justify-end mt-3">
+      <button class="btn btn-danger" onclick="removeMemberRow('${m.id}')">🗑 移除该队员</button>
+    </div>
+  </div>`;
+}
+
+function buildMemberRows(){
+  $('editorMembers').innerHTML = DATA.members.map(memberRowHTML).join('');
+}
+
+function addMemberRow(){
+  const id = 'm' + Date.now();
+  const color = PALETTE[DATA.members.length % PALETTE.length];
+  DATA.members.push({id, name:'新队员', avatar:'🕹️', role:'中单', title:'新人报到', color,
+    kda:6.0, winRate:50, mvp:0, games:0, pigeon:0, carry:50, feed:50,
+    heroes:['待定'], stats:{输出:60,生存:60,视野:60,团队:60,发育:60},
+    recent:['W','L','W','L','W','L','W','L']});
+  buildMemberRows();
+}
+
+function removeMemberRow(id){
+  if(DATA.members.length<=2){ alert('车队至少保留 2 人，不然怎么开黑？'); return; }
+  DATA.members = DATA.members.filter(m=>m.id!==id);
+  buildMemberRows();
+}
+
+function saveEditor(){
+  DATA.team.name = $('fTeamName').value.trim() || '深夜开黑车队';
+  DATA.team.slogan = $('fTeamSlogan').value.trim();
+  document.querySelectorAll('[data-row]').forEach(row=>{
+    const id = row.dataset.row;
+    const m = DATA.members.find(x=>x.id===id);
+    if(!m) return;
+    row.querySelectorAll('[data-f]').forEach(inp=>{
+      const f = inp.dataset.f;
+      if(f==='heroes'){ m.heroes = inp.value.split(/[,，]/).map(s=>s.trim()).filter(Boolean); }
+      else if(['kda','winRate','mvp','games','pigeon','carry','feed'].includes(f)){ m[f] = parseFloat(inp.value)||0; }
+      else m[f] = inp.value;
+    });
+    row.querySelectorAll('[data-stat]').forEach(inp=>{ m.stats[inp.dataset.stat] = +inp.value; });
+  });
+  // 重新计算 KPI 汇总（胜率取均值，场次取总和的一半近似五排场次）
+  DATA.kpi.winRate = Math.round(DATA.members.reduce((s,m)=>s+m.winRate,0)/DATA.members.length);
+  if(!DATA.members.find(m=>m.id===selectedId)) selectedId = DATA.members[0].id;
+  persist();
+  closeEditor();
+  renderAll();
+}
+
+function resetData(){
+  if(!confirm('确定恢复默认演示数据？当前修改会被清空。')) return;
+  localStorage.removeItem(LS_KEY);
+  DATA = loadData();
+  selectedId = DATA.members[0].id;
+  renderAll();
+}
+
+/* ================= 时钟 ================= */
+function tick(){
+  const d = new Date();
+  const p = n=>String(n).padStart(2,'0');
+  $('clock').textContent = `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+  const week = ['周日','周一','周二','周三','周四','周五','周六'][d.getDay()];
+  $('dateLine').textContent = `${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())} · ${week}`;
+}
+setInterval(tick, 1000); tick();
+
+/* ================= 启动 ================= */
+window.addEventListener('resize', ()=>Object.values(charts).forEach(c=>c.resize()));
+if(window.echarts){ renderAll(); }
+else{ document.body.insertAdjacentHTML('beforeend','<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#FF4D6D;font-size:14px">ECharts 加载失败，请检查网络后刷新</div>'); }
+</script>
+</body>
+</html>
