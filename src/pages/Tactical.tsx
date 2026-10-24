@@ -9,7 +9,7 @@ import { iconOf } from '../lib/asset';
 import { operatorById } from '../data/operators';
 import {
   ENEMY_PINS, FLOORS, OPERATOR_SUGGESTIONS, PHASES, PLANS, PRESET_INTEL,
-  ROUND_LENGTH, RISKS, parseIntel,
+  ROUND_LENGTH, RISKS, SITES, parseIntel,
   type FloorId, type IntelEvent, type TacticalPlan,
 } from '../data/cafeSim';
 import './tactical/tactical.css';
@@ -31,7 +31,7 @@ export default function Tactical() {
   const [pane, setPane] = useState<'intel' | 'map' | 'plan'>('map');
   const [mode, setMode] = useState<'attack' | 'defend'>('attack');
   const [site, setSite] = useState<'A' | 'B'>('A');
-  const [floorId, setFloorId] = useState<FloorId>('2F');
+  const [floorId, setFloorId] = useState<FloorId>('B1');
   const [tab, setTab] = useState<'summary' | 'ops' | 'plans' | 'risks'>('summary');
   const [planId, setPlanId] = useState('plan-a');
   const [appliedId, setAppliedId] = useState<string | null>('plan-a');
@@ -106,6 +106,8 @@ export default function Tactical() {
   const changeSite = (next: 'A' | 'B') => {
     if (next === site) return;
     setSite(next);
+    const target = SITES.find((s) => s.id === next);
+    if (target) setFloorId(target.floorId);
     invalidate();
   };
 
@@ -231,7 +233,7 @@ export default function Tactical() {
               <div className="tac-manual">
                 <input
                   className="field"
-                  placeholder="手动输入情报，如：2F 钢琴房有人"
+                  placeholder="手动输入情报，如：B1 金库有人"
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && addManual()}
@@ -322,10 +324,10 @@ export default function Tactical() {
                 <CrosshairGlyph />
                 <div>
                   <div className="row" style={{ gap: 6 }}>
-                    <h3 className="tac-map-title">咖啡馆 · Café-Sim</h3>
-                    <span className="chip">示意场景</span>
+                    <h3 className="tac-map-title">银行 · Bank</h3>
+                    <span className="chip chip-cyan">观战俯视</span>
                   </div>
-                  <div className="tiny faint">自绘底图 · 非真实关卡结构 · 演示模式</div>
+                  <div className="tiny faint">公开赛常用图 · 俯视底图 · 演示模式</div>
                 </div>
               </div>
               <div className="grow" />
@@ -483,9 +485,9 @@ export default function Tactical() {
               {tab === 'summary' && (
                 <>
                   <div className="tac-ctx">
-                    <div><span className="faint tiny">场景</span><strong>Café-Sim</strong></div>
+                    <div><span className="faint tiny">场景</span><strong>Bank · 银行</strong></div>
                     <div><span className="faint tiny">攻防</span><strong>{mode === 'attack' ? '进攻' : '防守'}</strong></div>
-                    <div><span className="faint tiny">目标</span><strong>{site} 点 · {site === 'A' ? '2F' : '1F'}</strong></div>
+                    <div><span className="faint tiny">目标</span><strong>{site} 点 · {SITES.find((s) => s.id === site)?.floorId ?? '1F'}</strong></div>
                   </div>
                   <div className="tac-note">
                     <Sparkles size={12} /> 演示规则生成 · 未调用真实模型

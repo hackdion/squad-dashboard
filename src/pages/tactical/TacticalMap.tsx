@@ -3,6 +3,7 @@ import { Crosshair, Minus, Plus, RotateCcw } from 'lucide-react';
 import type { Floor, IntelEvent, RouteSeg, TacticalPlan } from '../../data/cafeSim';
 import { ENEMY_PINS, PHASES, SITES } from '../../data/cafeSim';
 import type { Member } from '../../domain/types';
+import { asset } from '../../lib/asset';
 
 const W = 1000;
 const H = 620;
@@ -136,14 +137,18 @@ export default function TacticalMap(props: Props) {
             setScale(clampScale(scale + (e.deltaY > 0 ? -0.12 : 0.12)));
           }}
         >
-          <svg viewBox={`0 0 ${W} ${H}`} className="tac-map__svg" role="img" aria-label={`Café-Sim ${floor.label} 楼层战术地图`}>
+          <svg viewBox={`0 0 ${W} ${H}`} className="tac-map__svg" role="img" aria-label={`BANK ${floor.label} 楼层观战俯视战术地图`}>
             <defs>
-              <pattern id="blueprint" width="40" height="40" patternUnits="userSpaceOnUse">
-                <path d="M40 0H0V40" fill="none" stroke="rgba(120,170,220,0.055)" strokeWidth="1" />
-              </pattern>
-              <pattern id="stairs" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                <line x1="0" y1="0" x2="0" y2="10" stroke="rgba(248,201,74,0.35)" strokeWidth="2" />
-              </pattern>
+              <linearGradient id="mapShade" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="#050D16" stopOpacity="0.72" />
+                <stop offset="0.28" stopColor="#050D16" stopOpacity="0.34" />
+                <stop offset="0.72" stopColor="#050D16" stopOpacity="0.36" />
+                <stop offset="1" stopColor="#050D16" stopOpacity="0.78" />
+              </linearGradient>
+              <radialGradient id="mapVignette" cx="0.5" cy="0.48" r="0.72">
+                <stop offset="0.55" stopColor="#050D16" stopOpacity="0" />
+                <stop offset="1" stopColor="#050D16" stopOpacity="0.78" />
+              </radialGradient>
               <filter id="glowCyan" x="-40%" y="-40%" width="180%" height="180%">
                 <feGaussianBlur stdDeviation="6" result="b" />
                 <feMerge>
@@ -159,20 +164,27 @@ export default function TacticalMap(props: Props) {
               </marker>
             </defs>
 
-            <rect x="0" y="0" width={W} height={H} fill="#08131D" />
-            <rect x="0" y="0" width={W} height={H} fill="url(#blueprint)" />
+            {/* 观战俯视底图 */}
+            <rect x="0" y="0" width={W} height={H} fill="#050D16" />
+            <image
+              href={asset(floor.image)}
+              x="0"
+              y="0"
+              width={W}
+              height={H}
+              preserveAspectRatio="xMidYMid slice"
+            />
+            <rect x="0" y="0" width={W} height={H} fill="url(#mapShade)" />
+            <rect x="0" y="0" width={W} height={H} fill="url(#mapVignette)" />
 
-            {/* 楼层外轮廓 */}
-            <rect x={sx(0.12)} y={sy(0.08)} width={sx(0.76)} height={sy(0.78)} fill="rgba(12,26,38,0.55)" stroke="rgba(148,196,226,0.22)" strokeWidth="2.5" />
-            <rect x={sx(0.14)} y={sy(0.1)} width={sx(0.72)} height={sy(0.72)} fill="none" stroke="rgba(148,196,226,0.1)" strokeWidth="1" />
-
-            {/* 房间 */}
-            {floor.rooms.map((room) => {
-              const [x, y, w, h] = room.rect;
+            {/* 房间标注（悬浮在实景底图上） */}
+            {showLabels && floor.rooms.map((room) => {
               const isSite = room.kind === 'site';
               const isStair = room.kind === 'stair';
-              const isOpen = room.kind === 'open' || room.kind === 'corridor';
               const active = hover === room.id || selected === room.id;
+              const w = room.name.length * 13 + 18;
+              const px = sx(room.x);
+              const py = sy(room.y) + (isSite ? 46 : 0);
               return (
                 <g
                   key={room.id}
@@ -181,17 +193,9 @@ export default function TacticalMap(props: Props) {
                   onClick={() => setSelected(room.id === selected ? null : room.id)}
                   style={{ cursor: 'pointer' }}
                 >
-                  <rect
-                    x={sx(x)}
-                    y={sy(y)}
-                    width={sx(w)}
-                    height={sy(h)}
-                    fill={isStair ? 'url(#stairs)' : active ? 'rgba(34,211,238,0.13)' : isSite ? 'rgba(248,201,74,0.07)' : isOpen ? 'rgba(120,170,220,0.035)' : 'rgba(20,38,54,0.42)'}
-                    stroke={active ? 'rgba(34,211,238,0.7)' : isSite ? 'rgba(248,201,74,0.4)' : 'rgba(148,196,226,0.26)'}
-                    strokeWidth={active ? 2 : 1.2}
-                  />
+                  <rect x={px - w / 2} y={py - 11} width={w} height={22} rx="5" fill={active ? 'rgba(34,211,238,0.22)' : 'rgba(5,13,22,0.62)'} stroke={active ? 'rgba(34,211,238,0.75)' : isSite ? 'rgba(248,201,74,0.5)' : 'rgba(156,176,198,0.22)'} strokeWidth="1" />
                   {showLabels && (
-                    <text x={sx(x + w / 2)} y={sy(y + h / 2) + 4} textAnchor="middle" fontSize={isStair ? 12 : 13} fill={isSite ? '#F8C94A' : '#9CB0C6'} style={{ letterSpacing: '0.06em' }}>
+                    <text x={px} y={py + 4} textAnchor="middle" fontSize={isStair ? 11 : 12} fill={isSite ? '#F8C94A' : active ? '#E6F6FF' : '#B9C8D8'} style={{ letterSpacing: '0.04em' }}>
                       {room.name}
                     </text>
                   )}
@@ -202,12 +206,12 @@ export default function TacticalMap(props: Props) {
             {/* 目标点 */}
             {SITES.filter((s) => s.floorId === floor.id).map((site) => (
               <g key={site.id} transform={`translate(${sx(site.x)},${sy(site.y)})`}>
-                <circle r="19" fill="rgba(248,201,74,0.12)" stroke="rgba(248,201,74,0.55)" strokeWidth="1.4" />
+                <circle r="19" fill="rgba(248,201,74,0.14)" stroke="rgba(248,201,74,0.65)" strokeWidth="1.4" />
                 <text textAnchor="middle" y="6" fontSize="17" fontFamily="Rajdhani, sans-serif" fontWeight="700" fill="#F8C94A">
                   {site.id}
                 </text>
                 <text textAnchor="middle" y="31" fontSize="10.5" fill="#9CB0C6">
-                  {site.id === 'A' ? '目标点 · 2F' : '目标点 · 1F'}
+                  目标点 · {floor.label}
                 </text>
               </g>
             ))}
@@ -298,11 +302,11 @@ export default function TacticalMap(props: Props) {
             ))}
 
             {/* 楼层标识 */}
-            <text x={sx(0.14)} y={sy(0.075)} fontSize="13" fill="#61758C" fontFamily="Rajdhani, sans-serif" letterSpacing="2">
-              CAFÉ-SIM · {floor.label} · {floor.name}
+            <text x={sx(0.03)} y={sy(0.05)} fontSize="13" fill="#7C93A8" fontFamily="Rajdhani, sans-serif" letterSpacing="2">
+              BANK · {floor.label} · {floor.name}
             </text>
-            <text x={sx(0.86)} y={sy(0.075)} textAnchor="end" fontSize="10" fill="#61758C">
-              北 ↑ · 示意底图
+            <text x={sx(0.97)} y={sy(0.05)} textAnchor="end" fontSize="10" fill="#61758C">
+              北 ↑ · 观战俯视
             </text>
           </svg>
         </div>

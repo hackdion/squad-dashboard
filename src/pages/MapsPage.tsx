@@ -40,17 +40,17 @@ export default function MapsPage() {
         </div>
       </header>
 
-      <section className="panel mp-cafe fade-up" aria-label="Café-Sim 示意场景">
+      <section className="panel mp-cafe fade-up" aria-label="Bank 观战俯视底图">
         <div className="panel-head">
-          <h3>Café-Sim 示意场景</h3>
-          <span className="chip chip-demo">自绘示意底图</span>
+          <h3>Bank 观战俯视底图</h3>
+          <span className="chip chip-cyan">公开赛常用图</span>
           <div className="grow" />
-          <span className="tiny faint">非真实关卡结构</span>
+          <span className="tiny faint">三层结构 · 演示模式</span>
         </div>
         <div className="panel-body mp-cafe-body">
           <div className="mp-schematic">
             <div className="mp-schematic-head">
-              <span className="sec-label">CAFÉ-SIM / SCHEMATIC</span>
+              <span className="sec-label">BANK / TACTICAL OVERVIEW</span>
               <span className="chip chip-cyan">B1 · 1F · 2F</span>
             </div>
             {FLOORS.map((item) => (
@@ -66,14 +66,14 @@ export default function MapsPage() {
               </div>
             ))}
             <span className="tiny faint">
-              演示用分层示意：三个楼层、A / B 两个点位，不代表任何官方关卡平面。
+              演示用分层示意：三个楼层、A / B 两个点位，底图取自公开俯视平面图。
             </span>
           </div>
 
           <div className="mp-cafe-notes">
             <p className="small muted">
-              本区为 <strong className="strong">Café-Sim 自绘示意底图</strong>，仅用于演示战术分层与点位关系，
-              <strong className="strong">并非真实关卡结构</strong>，也不代表官方素材。
+              本区为 <strong className="strong">Bank 观战俯视底图</strong>，用于演示战术分层与点位关系，
+              <strong className="strong">所有路线与敌情均为演示数据</strong>，不代表任何官方赛事画面。
             </p>
             <ul className="mp-points">
               <li>
@@ -191,9 +191,9 @@ export default function MapsPage() {
         </div>
         <div className="panel-body mp-boundary-grid">
           <div>
-            <span className="sec-label">CAFÉ-SIM</span>
+            <span className="sec-label">BANK · OVERVIEW</span>
             <p className="muted">
-              Café-Sim 底图由 CSS 与自绘图形构成，仅用于分层与点位示意，非真实关卡结构。
+              Bank 底图取自公开俯视平面图，用于分层与点位示意；路线、敌情与语音均为演示数据。
             </p>
           </div>
           <div>
